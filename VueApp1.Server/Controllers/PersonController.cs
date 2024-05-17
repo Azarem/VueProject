@@ -24,25 +24,36 @@ namespace VueApp1.Server.Controllers
 
         [HttpPut, Route("")]
         public async Task<IActionResult> Put([FromBody] Person person)
-            => await Put(person.Id, person);
+        {
+            if (person.Id == 0)
+            {
+                _context.Persons.Add(person);
+                await _context.SaveChangesAsync();
+                return Created();
+            }
+
+            var record = await _context.Persons.FindAsync(person.Id)
+                ?? throw new("Person not found");
+
+            record.FirstName = person.FirstName;
+            record.LastName = person.LastName;
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
 
         [HttpPut, Route("{id:int}")]
         public async Task<IActionResult> Put([FromRoute] int id, [FromBody] Person person)
         {
-            var record = await _context.Persons.FindAsync(id)
-                ?? throw new("Person not found");
-            record.FirstName = person.FirstName;
-            record.LastName = person.LastName;
-            await _context.SaveChangesAsync();
-            return Ok();
+            person.Id = id;
+            return await Put(person);
         }
 
         [HttpPost, Route("")]
         public async Task<IActionResult> Post([FromBody] Person person)
         {
-            _context.Persons.Add(person);
-            await _context.SaveChangesAsync();
-            return Created();
+            person.Id = 0;
+            return await Put(person);
         }
 
         [HttpDelete, Route("{id:int}")]
